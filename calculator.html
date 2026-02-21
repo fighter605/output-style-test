@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>계산기</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #1a1a2e;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .calculator {
+      background: #16213e;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      width: 320px;
+    }
+
+    .display {
+      background: #0f3460;
+      border-radius: 12px;
+      padding: 20px 16px 12px;
+      margin-bottom: 20px;
+      text-align: right;
+    }
+
+    .display .expression {
+      color: #a0aec0;
+      font-size: 14px;
+      min-height: 20px;
+      margin-bottom: 8px;
+    }
+
+    .display .current {
+      color: #e2e8f0;
+      font-size: 36px;
+      font-weight: 300;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+
+    button:active { transform: scale(0.94); }
+
+    .btn-number {
+      background: #1a1a4e;
+      color: #e2e8f0;
+    }
+
+    .btn-number:hover { background: #252570; }
+
+    .btn-operator {
+      background: #e94560;
+      color: white;
+    }
+
+    .btn-operator:hover { opacity: 0.85; }
+
+    .btn-clear {
+      background: #533483;
+      color: white;
+    }
+
+    .btn-clear:hover { opacity: 0.85; }
+
+    .btn-equals {
+      background: #0f9b8e;
+      color: white;
+      grid-column: span 2;
+    }
+
+    .btn-equals:hover { opacity: 0.85; }
+
+    .btn-zero { grid-column: span 2; }
+
+    .error { color: #fc8181 !important; }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display">
+      <div class="expression" id="expression"></div>
+      <div class="current" id="current">0</div>
+    </div>
+    <div class="buttons">
+      <button class="btn-clear" onclick="clearAll()">AC</button>
+      <button class="btn-clear" onclick="toggleSign()">+/-</button>
+      <button class="btn-clear" onclick="percentage()">%</button>
+      <button class="btn-operator" onclick="setOperator('/')">÷</button>
+
+      <button class="btn-number" onclick="appendDigit('7')">7</button>
+      <button class="btn-number" onclick="appendDigit('8')">8</button>
+      <button class="btn-number" onclick="appendDigit('9')">9</button>
+      <button class="btn-operator" onclick="setOperator('*')">×</button>
+
+      <button class="btn-number" onclick="appendDigit('4')">4</button>
+      <button class="btn-number" onclick="appendDigit('5')">5</button>
+      <button class="btn-number" onclick="appendDigit('6')">6</button>
+      <button class="btn-operator" onclick="setOperator('-')">−</button>
+
+      <button class="btn-number" onclick="appendDigit('1')">1</button>
+      <button class="btn-number" onclick="appendDigit('2')">2</button>
+      <button class="btn-number" onclick="appendDigit('3')">3</button>
+      <button class="btn-operator" onclick="setOperator('+')">+</button>
+
+      <button class="btn-number btn-zero" onclick="appendDigit('0')">0</button>
+      <button class="btn-number" onclick="appendDecimal()">.</button>
+      <button class="btn-equals" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <script>
+    // 계산기 상태
+    let state = {
+      current: '0',      // 현재 화면에 표시되는 숫자
+      previous: null,    // 이전에 입력된 숫자
+      operator: null,    // 선택된 연산자
+      waitingForNext: false  // 연산자 누른 후 다음 숫자를 기다리는 중
+    };
+
+    function updateDisplay() {
+      const currentEl = document.getElementById('current');
+      const expressionEl = document.getElementById('expression');
+
+      currentEl.textContent = state.current;
+      currentEl.classList.remove('error');
+
+      if (state.operator && state.previous !== null) {
+        const opSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+        expressionEl.textContent = `${state.previous} ${opSymbols[state.operator]}`;
+      } else {
+        expressionEl.textContent = '';
+      }
+    }
+
+    function appendDigit(digit) {
+      if (state.waitingForNext) {
+        state.current = digit;
+        state.waitingForNext = false;
+      } else {
+        state.current = state.current === '0' ? digit : state.current + digit;
+      }
+      updateDisplay();
+    }
+
+    function appendDecimal() {
+      if (state.waitingForNext) {
+        state.current = '0.';
+        state.waitingForNext = false;
+      } else if (!state.current.includes('.')) {
+        state.current += '.';
+      }
+      updateDisplay();
+    }
+
+    function setOperator(op) {
+      if (state.operator && !state.waitingForNext) {
+        calculate();
+      }
+      state.previous = state.current;
+      state.operator = op;
+      state.waitingForNext = true;
+      updateDisplay();
+    }
+
+    function clearAll() {
+      state = { current: '0', previous: null, operator: null, waitingForNext: false };
+      updateDisplay();
+    }
+
+    function toggleSign() {
+      state.current = String(parseFloat(state.current) * -1);
+      updateDisplay();
+    }
+
+    function percentage() {
+      state.current = String(parseFloat(state.current) / 100);
+      updateDisplay();
+    }
+
+    // TODO(human): calculate() 함수를 구현해주세요.
+    // state.previous (이전 숫자), state.operator (연산자: +, -, *, /),
+    // state.current (현재 숫자)를 사용해 결과를 계산하고
+    // state.current에 결과(문자열)를 저장한 뒤 updateDisplay()를 호출하세요.
+    // 0으로 나누는 경우와 소수점 정밀도 문제도 처리해보세요.
+    function calculate() {
+
+    }
+
+    // 키보드 지원
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '0' && e.key <= '9') appendDigit(e.key);
+      else if (e.key === '.') appendDecimal();
+      else if (e.key === '+') setOperator('+');
+      else if (e.key === '-') setOperator('-');
+      else if (e.key === '*') setOperator('*');
+      else if (e.key === '/') { e.preventDefault(); setOperator('/'); }
+      else if (e.key === 'Enter' || e.key === '=') calculate();
+      else if (e.key === 'Escape') clearAll();
+      else if (e.key === 'Backspace') {
+        state.current = state.current.length > 1
+          ? state.current.slice(0, -1)
+          : '0';
+        updateDisplay();
+      }
+    });
+  </script>
+</body>
+</html>
